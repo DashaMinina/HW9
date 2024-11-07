@@ -1,5 +1,6 @@
 from selene import browser, have, command
 
+from data.users import User
 from tests.resources import util
 
 
@@ -20,89 +21,51 @@ class RegistrationPage:
 
     def open(self):
         browser.open('/automation-practice-form')
-        browser.all('[id^=google_ads][id$=container__]').with_(timeout=3).wait_until(
-            have.size_greater_than_or_equal(3)
-        )
-        browser.all('[id^=google_ads][id$=container__]').perform(command.js.remove)
+        browser.driver.execute_script("$('#fixedban').remove()")
+        browser.driver.execute_script("$('footer').remove()")
         return self
 
-    def fill_first_name(self, value):
-        self.first_name.type(value)
-        return self
-
-    def fill_last_name(self, value):
-        self.last_name.type(value)
-        return self
-
-    def fill_email(self, value):
-        self.email.type(value)
-        return self
-
-    def fill_gender(self, param):
-        self.gender.element_by(have.value(param)).element('..').click()
-
-    def fill_mobile_number(self, value):
-        self.user_number.type(value)
-        return self
-
-    def fill_date_of_birth(self, year, month, day):
+    def register(self, user: User):
+        self.first_name.type(user.first_name)
+        self.last_name.type(user.last_name)
+        self.email.type(user.email)
+        self.gender.element_by(have.value(user.gender)).element('..').click()
+        self.user_number.type(user.mobile_number)
         browser.element('#dateOfBirthInput').click()
-        browser.element('.react-datepicker__month-select').type(month)
-        browser.element('.react-datepicker__year-select').type(year)
-        browser.element(
-            f'.react-datepicker__day--0{day}:not(.react-datepicker__day--outside-month)'
-        ).click()
-        return self
-
-    def fill_subjects(self, value):
-        self.subjects.type(value).press_enter()
-        return self
-
-    def fill_hobbies(self, value):
-        self.hobbies.element_by(have.exact_text(value)).click()
-        return self
-
-    def fill_picture(self, value):
-        self.picture.set_value(util.path(value))
-        return self
-
-    def fill_address(self, value):
-        self.address.type(value)
-        return self
-
-    def fill_state(self, name):
+        browser.element('.react-datepicker__month-select').type(user.date_of_birth["month"])
+        browser.element('.react-datepicker__year-select').type(user.date_of_birth["year"])
+        browser.element(f'.react-datepicker__day--0{user.date_of_birth["day"]}:not(.react-datepicker__day--outside-month)').click()
+        self.subjects.type(user.subjects).press_enter()
+        self.hobbies.element_by(have.exact_text(user.hobbies)).click()
+        self.picture.set_value(util.path(user.picture))
+        self.address.type(user.address)
         self.state.perform(command.js.scroll_into_view)
         self.state.click()
         browser.all('[id^=react-select][id*=option]').element_by(
-            have.exact_text(name)
+            have.exact_text(user.state)
         ).click()
-        return self
-
-    def fill_city(self, name):
         self.city.click()
         browser.all('[id^=react-select][id*=option]').element_by(
-            have.exact_text(name)
+            have.exact_text(user.city)
         ).click()
-        return self
-
-    def submit(self):
         browser.element('#submit').perform(command.js.click)
-        return self
 
 
-    def should_have_registered(self, full_name, email, gender, mobile_number, date_of_birth, subjects, hobbies, picture, address, state_city):
+
+    def should_have_registered(self, user: User):
+        birthday_format_mouth = f"{user.date_of_birth['day']} November,{user.date_of_birth['year']}"
         browser.element('.modal-content').element('.table').all('td').even.should(
             have.exact_texts(
-                full_name,
-                email,
-                gender,
-                mobile_number,
-                date_of_birth,
-                subjects,
-                hobbies,
-                picture,
-                address,
-                state_city
+                user.first_name + ' ' + user.last_name,
+                user.email,
+                user.gender,
+                user.mobile_number,
+                birthday_format_mouth,
+                user.subjects,
+                user.hobbies,
+                user.picture,
+                user.address,
+                user.state + ' ' + user.city
             )
         )
         return self
